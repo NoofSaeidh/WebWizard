@@ -20,6 +20,7 @@ namespace PX.WebWizard.EntityFrameworkCore
         {
             if (!SkipDbContextRegistration)
             {
+                Configuration.UnitOfWork.IsTransactional = false;
                 Configuration.Modules.AbpEfCore().AddDbContext<WebWizardDbContext>(options =>
                 {
                     if (options.ExistingConnection != null)

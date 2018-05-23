@@ -3,7 +3,6 @@ using Abp.Authorization;
 using Abp.BackgroundJobs;
 using Abp.Events.Bus.Entities;
 using Abp.Notifications;
-using PX.WebWizard.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -11,20 +10,20 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.Internal;
 using Microsoft.EntityFrameworkCore.ValueGeneration;
+using PX.WebWizard.EntityFrameworkCore;
 using System;
 
 namespace PX.WebWizard.Migrations
 {
     [DbContext(typeof(WebWizardDbContext))]
-    [Migration("20180201051646_Upgraded_To_Abp_v3.4.0")]
-    partial class Upgraded_To_Abp_v340
+    [Migration("20180523180453_Initial_Migration")]
+    partial class Initial_Migration
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "2.0.1-rtm-125")
-                .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                .HasAnnotation("ProductVersion", "2.0.3-rtm-10026");
 
             modelBuilder.Entity("Abp.Application.Editions.Edition", b =>
                 {
@@ -93,7 +92,7 @@ namespace PX.WebWizard.Migrations
                         .ValueGeneratedOnAdd();
 
                     b.Property<string>("BrowserInfo")
-                        .HasMaxLength(256);
+                        .HasMaxLength(512);
 
                     b.Property<string>("ClientIpAddress")
                         .HasMaxLength(64);
@@ -304,7 +303,7 @@ namespace PX.WebWizard.Migrations
                         .ValueGeneratedOnAdd();
 
                     b.Property<string>("BrowserInfo")
-                        .HasMaxLength(256);
+                        .HasMaxLength(512);
 
                     b.Property<string>("ClientIpAddress")
                         .HasMaxLength(64);
@@ -392,15 +391,18 @@ namespace PX.WebWizard.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<string>("LoginProvider");
+                    b.Property<string>("LoginProvider")
+                        .HasMaxLength(64);
 
-                    b.Property<string>("Name");
+                    b.Property<string>("Name")
+                        .HasMaxLength(128);
 
                     b.Property<int?>("TenantId");
 
                     b.Property<long>("UserId");
 
-                    b.Property<string>("Value");
+                    b.Property<string>("Value")
+                        .HasMaxLength(512);
 
                     b.HasKey("Id");
 
@@ -512,7 +514,7 @@ namespace PX.WebWizard.Migrations
                         .ValueGeneratedOnAdd();
 
                     b.Property<string>("BrowserInfo")
-                        .HasMaxLength(256);
+                        .HasMaxLength(512);
 
                     b.Property<string>("ClientIpAddress")
                         .HasMaxLength(64);
@@ -838,7 +840,8 @@ namespace PX.WebWizard.Migrations
                         .ValueGeneratedOnAdd();
 
                     b.Property<string>("ConcurrencyStamp")
-                        .IsConcurrencyToken();
+                        .IsConcurrencyToken()
+                        .HasMaxLength(128);
 
                     b.Property<DateTime>("CreationTime");
 
@@ -899,7 +902,8 @@ namespace PX.WebWizard.Migrations
                         .HasMaxLength(64);
 
                     b.Property<string>("ConcurrencyStamp")
-                        .IsConcurrencyToken();
+                        .IsConcurrencyToken()
+                        .HasMaxLength(128);
 
                     b.Property<DateTime>("CreationTime");
 
@@ -955,9 +959,11 @@ namespace PX.WebWizard.Migrations
                     b.Property<string>("PasswordResetCode")
                         .HasMaxLength(328);
 
-                    b.Property<string>("PhoneNumber");
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(32);
 
-                    b.Property<string>("SecurityStamp");
+                    b.Property<string>("SecurityStamp")
+                        .HasMaxLength(128);
 
                     b.Property<string>("Surname")
                         .IsRequired()

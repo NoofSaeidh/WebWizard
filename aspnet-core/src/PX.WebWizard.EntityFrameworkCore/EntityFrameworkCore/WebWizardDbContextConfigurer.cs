@@ -7,12 +7,12 @@ namespace PX.WebWizard.EntityFrameworkCore
     {
         public static void Configure(DbContextOptionsBuilder<WebWizardDbContext> builder, string connectionString)
         {
-            builder.UseSqlServer(connectionString);
+            builder.UseSqlite(connectionString);
         }
 
         public static void Configure(DbContextOptionsBuilder<WebWizardDbContext> builder, DbConnection connection)
         {
-            builder.UseSqlServer(connection);
+            builder.UseSqlite(connection);
         }
     }
 }
