@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace AcWebTool.Core
+namespace PX.WebWizard.Acumatica.IisManagement
 {
     public class FileWrapper : IFileWrapper
     {

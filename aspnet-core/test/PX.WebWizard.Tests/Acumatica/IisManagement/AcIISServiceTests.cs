@@ -1,24 +1,20 @@
-using AcWebTool.Core.Configuration;
-using AcWebTool.Core;
-using AcWebTool.Core.AcIIS;
-using AcWebTool.Core.AcIIS.IISManagement;
 using Microsoft.Extensions.Options;
 using Moq;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using PX.WebWizard.Acumatica.IisManagement;
+using PX.WebWizard.Configuration;
 using Xunit;
 
-namespace AcWebTool.Core.Tests.AcIIS
+namespace PX.WebWizard.Tests.Acumatica.IisManagement
 {
-    public class AcIISServiceTests
+    public class AcIisServiceTests
     {
-        private AcEnvironment _environment = new AcEnvironment
+        private AcumaticaSettings _environment = new AcumaticaSettings
         {
-            AcExeFileName = "ac.exe",
             DefaultSiteName = "Default Web Site",
-            WizardFileName = "Acumatica Wizard.exe",
             GlobalPath = "c:\\acumatica",
             DataFolderName = "Data"
         };
@@ -28,8 +24,8 @@ namespace AcWebTool.Core.Tests.AcIIS
         {
             // Arrange
             var ipath = _environment.GlobalPath + "\\Feature";
-            var snapshot = Mock.Of<IOptionsSnapshot<AcEnvironment>>(p => p.Value == _environment);
-            var iapp = new IISApplication
+            var snapshot = Mock.Of<IOptionsSnapshot<AcumaticaSettings>>(p => p.Value == _environment);
+            var iapp = new IisApplication
             {
                 Path = ipath + "\\App",
                 Uris = new List<string>
@@ -39,7 +35,7 @@ namespace AcWebTool.Core.Tests.AcIIS
                 },
                 Version = "7.00.0001"
             };
-            var site = new IISSite
+            var site = new IisSite
             {
                 IISApplications = Enumerable.Repeat(iapp, 1),
                 Uris = new List<string>
@@ -48,7 +44,7 @@ namespace AcWebTool.Core.Tests.AcIIS
                     "https://machine:533/"
                 }
             };
-            var iismanager = Mock.Of<IIISManager>(m => m.GetIISSite(_environment.DefaultSiteName) == site);
+            var iismanager = Mock.Of<IIisManager>(m => m.GetIISSite(_environment.DefaultSiteName) == site);
 
             var filewrapper = new Mock<IFileWrapper>();
             filewrapper.Setup(f => f.GetChilds(_environment.GlobalPath)).Returns(Enumerable.Repeat(ipath, 1));
@@ -59,7 +55,7 @@ namespace AcWebTool.Core.Tests.AcIIS
             filewrapper.Setup(f => f.IsFolder(It.IsAny<string>())).Returns(true);
 
 
-            var service = new AcIISService(snapshot, iismanager, filewrapper.Object);
+            var service = new AcIisService(snapshot, iismanager, filewrapper.Object);
             // Act
 
             var result = service.GetApplications().ToList();
@@ -79,8 +75,8 @@ namespace AcWebTool.Core.Tests.AcIIS
         public void GetApplications_DoesntReturnInvalidApplication()
         {
             // Arrange
-            var snapshot = Mock.Of<IOptionsSnapshot<AcEnvironment>>(p => p.Value == _environment);
-            var iapp = new IISApplication
+            var snapshot = Mock.Of<IOptionsSnapshot<AcumaticaSettings>>(p => p.Value == _environment);
+            var iapp = new IisApplication
             {
                 Path = "C:\\site\\App",
                 Uris = new List<string>
@@ -90,7 +86,7 @@ namespace AcWebTool.Core.Tests.AcIIS
                 },
                 Version = "7.00.0001"
             };
-            var site = new IISSite
+            var site = new IisSite
             {
                 IISApplications = Enumerable.Repeat(iapp, 1),
                 Uris = new List<string>
@@ -99,7 +95,7 @@ namespace AcWebTool.Core.Tests.AcIIS
                     "https://machine:533/"
                 }
             };
-            var iismanager = Mock.Of<IIISManager>(m => m.GetIISSite(_environment.DefaultSiteName) == site);
+            var iismanager = Mock.Of<IIisManager>(m => m.GetIISSite(_environment.DefaultSiteName) == site);
 
             var filewrapper = new Mock<IFileWrapper>();
             filewrapper.Setup(f => f.GetChilds(_environment.GlobalPath)).Returns(Enumerable.Empty<string>());
@@ -110,7 +106,7 @@ namespace AcWebTool.Core.Tests.AcIIS
             filewrapper.Setup(f => f.IsFolder(It.IsAny<string>())).Returns(true);
 
 
-            var service = new AcIISService(snapshot, iismanager, filewrapper.Object);
+            var service = new AcIisService(snapshot, iismanager, filewrapper.Object);
             // Act
 
             var result = service.GetApplications().ToList();
@@ -123,11 +119,11 @@ namespace AcWebTool.Core.Tests.AcIIS
         public void GetInstallations_ReturnsValidInstallations()
         {
             // Arrange
-            var snapshot = Mock.Of<IOptionsSnapshot<AcEnvironment>>(p => p.Value == _environment);
+            var snapshot = Mock.Of<IOptionsSnapshot<AcumaticaSettings>>(p => p.Value == _environment);
             var ipath = _environment.GlobalPath + "\\Feature";
 
             const string version = "7.00.0001";
-            var iismanager = Mock.Of<IIISManager>();
+            var iismanager = Mock.Of<IIisManager>();
 
             var filewrapper = new Mock<IFileWrapper>();
             filewrapper.Setup(f => f.GetChilds(_environment.GlobalPath)).Returns(Enumerable.Repeat(ipath, 1));
@@ -138,7 +134,7 @@ namespace AcWebTool.Core.Tests.AcIIS
             filewrapper.Setup(f => f.IsFolder(It.IsAny<string>())).Returns(true);
 
 
-            var service = new AcIISService(snapshot, iismanager, filewrapper.Object);
+            var service = new AcIisService(snapshot, iismanager, filewrapper.Object);
             // Act
 
             var result = service.GetInstallations().ToList();
@@ -158,12 +154,12 @@ namespace AcWebTool.Core.Tests.AcIIS
         public void GetInstallations_DoesntReturnInvalidInstallations()
         {
             // Arrange
-            var snapshot = Mock.Of<IOptionsSnapshot<AcEnvironment>>(p => p.Value == _environment);
+            var snapshot = Mock.Of<IOptionsSnapshot<AcumaticaSettings>>(p => p.Value == _environment);
             var ipath1 = _environment.GlobalPath + "\\Feature";
 
             var ipath2 = "C:\\otherspace";
 
-            var iismanager = Mock.Of<IIISManager>();
+            var iismanager = Mock.Of<IIisManager>();
 
             var filewrapper = new Mock<IFileWrapper>();
             filewrapper.Setup(f => f.GetChilds(_environment.GlobalPath)).Returns(new List<string> { ipath1, ipath2 });
@@ -174,7 +170,7 @@ namespace AcWebTool.Core.Tests.AcIIS
             filewrapper.Setup(f => f.IsFolder(It.IsAny<string>())).Returns(false);
 
 
-            var service = new AcIISService(snapshot, iismanager, filewrapper.Object);
+            var service = new AcIisService(snapshot, iismanager, filewrapper.Object);
             // Act
 
             var result = service.GetInstallations().ToList();

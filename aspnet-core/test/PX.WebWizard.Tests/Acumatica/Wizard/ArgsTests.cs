@@ -1,13 +1,13 @@
-﻿using AcWebTool.Core.AcExe;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using PX.WebWizard.Acumatica.Wizard;
 
 
-namespace AcWebTool.Core.Tests.AcExe
+namespace PX.WebWizard.Tests.Acumatica.Wizard
 {
     public class ArgsTests
     {

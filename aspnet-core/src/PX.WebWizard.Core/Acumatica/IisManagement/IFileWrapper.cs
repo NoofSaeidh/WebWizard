@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace AcWebTool.Core
+namespace PX.WebWizard.Acumatica.IisManagement
 {
     public interface IFileWrapper
     {

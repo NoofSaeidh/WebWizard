@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AcWebTool.Tests.FakeAcExe
+namespace PX.WebWizard.Tests.FakeAcExe
 {
     public static class FakeAcExeProgram
     {

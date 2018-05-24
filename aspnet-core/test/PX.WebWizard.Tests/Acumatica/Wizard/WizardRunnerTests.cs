@@ -1,18 +1,18 @@
-﻿using AcWebTool.Core.AcExe;
-using AcWebTool.Tests.FakeAcExe;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using PX.WebWizard.Acumatica.Wizard;
+using PX.WebWizard.Tests.FakeAcExe;
 
-namespace AcWebTool.Core.Tests.AcExe
+namespace PX.WebWizard.Tests.Acumatica.Wizard
 {
-    public class AcExeRunnerTests
+    public class WizardRunnerTests
     {
         private readonly string _fakeAcExePath;
-        public AcExeRunnerTests()
+        public WizardRunnerTests()
         {
             var fakeAsm = Assembly.GetAssembly(typeof(FakeAcExeProgram));
             _fakeAcExePath = fakeAsm.Location;
@@ -38,7 +38,7 @@ namespace AcWebTool.Core.Tests.AcExe
         public async Task RunAcExe_ShouldCatchException()
         {
             // Arrange
-            var runner = new AcExeRunner();
+            var runner = new WizardRunner();
             var args = JoinArgs(FakeAcExeProgram.Throw, "throw message");
             // Act
             Func<Task> act = async () => await runner.RunAcExe(_fakeAcExePath, args);
