@@ -6,6 +6,6 @@ namespace PX.WebWizard.Acumatica.IisManagement
 {
     public interface IIisManager
     {
-        IisSite GetIISSite(string siteName);
+        IisSite GetIisSite(string siteName);
     }
 }

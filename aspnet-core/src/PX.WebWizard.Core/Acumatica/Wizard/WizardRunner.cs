@@ -1,3 +1,4 @@
+using Abp.Dependency;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace PX.WebWizard.Acumatica.Wizard
 {
-    public class WizardRunner
+    public class WizardRunner : IWizardRunner, ISingletonDependency
     {
         public async Task RunAcExe(string acExePath, WizardArgs args
             , DataReceivedEventHandler outputDataHandler = null

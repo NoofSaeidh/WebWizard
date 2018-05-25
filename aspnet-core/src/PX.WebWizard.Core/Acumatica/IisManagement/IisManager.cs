@@ -1,3 +1,4 @@
+using Abp.Dependency;
 using Microsoft.Web.Administration;
 using System;
 using System.Collections.Generic;
@@ -7,9 +8,9 @@ using System.Text;
 
 namespace PX.WebWizard.Acumatica.IisManagement
 {
-    public class IisManager : IIisManager
+    public class IisManager : IIisManager, ISingletonDependency
     {
-        public IisSite GetIISSite(string siteName)
+        public IisSite GetIisSite(string siteName)
         {
             using (var serverManager = new ServerManager())
             {
@@ -56,7 +57,7 @@ namespace PX.WebWizard.Acumatica.IisManagement
                 return new IisSite
                 {
                     Uris = uris.Select(x => x.ToString()),
-                    IISApplications = apps
+                    IisApplications = apps
                 };
             }
         }

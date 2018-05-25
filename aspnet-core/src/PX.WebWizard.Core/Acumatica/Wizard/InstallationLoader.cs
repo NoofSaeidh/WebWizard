@@ -6,10 +6,11 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using Abp.Dependency;
 
 namespace PX.WebWizard.Acumatica.Wizard
 {
-    public class InstallationLoader
+    public class InstallationLoader : IInstallationLoader, ITransientDependency
     {
         public InstallationLoader(IOptionsSnapshot<AcumaticaSettings> acEnvironment)
         {
@@ -22,21 +23,14 @@ namespace PX.WebWizard.Acumatica.Wizard
         /// </summary>
         /// <param name="version">Acumatica Version.</param>
         /// <returns>Path to Acumatica package.</returns>
-        public string FindAcPackage(string version)
+        public string FindInstallationPackage(string version)
         {
-            foreach (var packageLocation in Environment.InstallationLocations 
-                ?? throw new InvalidOperationException($"{nameof(Environment.InstallationLocations)} is not specified."))
-            {
-                foreach (var dir in Directory.EnumerateDirectories(packageLocation, version, SearchOption.AllDirectories))
-                {
-                    var file = Directory.EnumerateFiles(dir, Environment.InstallationPackageName, SearchOption.AllDirectories).SingleOrDefault();
-                    if (file != null) return file;               
-                }
-            }
+            if (TryFindInstallationPackage(version, out var result))
+                return result;
             throw new FileNotFoundException("Acumatica package not found.", version);
         }
 
-        public void CopyAndUnzipAcPackage(string packagePath, string resultPath, bool overwrite = true)
+        public void UnpackInstallationPackage(string packagePath, string resultPath, bool overwrite = true)
         {
             //todo: should it be temp folder?
             var tmp = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
@@ -46,7 +40,47 @@ namespace PX.WebWizard.Acumatica.Wizard
             File.Delete(tmp);
         }
 
-        public void FindCopyAndUnzipAcPackage(string version, string resultFolderPath, bool overwrite = true)
-            => CopyAndUnzipAcPackage(FindAcPackage(version), resultFolderPath, overwrite);
+        public void FindAndUnpackInstallationPackage(string version, string resultFolderPath, bool overwrite = true)
+            => UnpackInstallationPackage(FindInstallationPackage(version), resultFolderPath, overwrite);
+
+        public bool TryFindInstallationPackage(string version, out string path)
+        {
+            string result = null;
+            foreach (var packageLocation in Environment.InstallationLocations
+                ?? throw new InvalidOperationException($"{nameof(Environment.InstallationLocations)} is not specified."))
+            {
+                foreach (var dir in Directory.EnumerateDirectories(packageLocation, version, SearchOption.AllDirectories))
+                {
+                    var file = Directory.EnumerateFiles(dir, Environment.InstallationPackageName, SearchOption.AllDirectories).SingleOrDefault();
+                    if (file != null)
+                    {
+                        result = file;
+                        break;
+                    }
+                }
+            }
+            if(result != null)
+            {
+                path = null;
+                return false;
+            }
+            path = result;
+            return true;
+        }
+
+        public bool TryFindAndUnpackInstallationPackage(string version, string resultPath, bool overwrite = true)
+        {
+            if (!TryFindInstallationPackage(version, out var path))
+                return false;
+            try
+            {
+                UnpackInstallationPackage(path, resultPath, overwrite);
+            }
+            catch
+            {
+                return false;
+            }
+            return true;
+        }
     }
 }

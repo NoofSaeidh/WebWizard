@@ -6,10 +6,11 @@ using System.Linq;
 using PX.WebWizard.Acumatica.IisManagement;
 using Microsoft.Extensions.Options;
 using PX.WebWizard.Configuration;
+using Abp.Dependency;
 
 namespace PX.WebWizard.Acumatica.IisManagement
 {
-    public class AcIisService : IAcIisService
+    public class AcIisService :  IAcIisService, ITransientDependency
     {
         private readonly AcumaticaSettings _environment;
         private readonly IIisManager _iisManager;
@@ -22,13 +23,13 @@ namespace PX.WebWizard.Acumatica.IisManagement
             _fileWrapper = fileWrapper;
         }
 
-        public IEnumerable<Application> GetAllApplications()
+        protected IEnumerable<Application> GetAllApplications()
         {
-            var site = _iisManager.GetIISSite(_environment.DefaultSiteName);
+            var site = _iisManager.GetIisSite(_environment.DefaultSiteName);
 
             var installations = GetInstallations().ToList();
 
-            foreach (var app in site.IISApplications)
+            foreach (var app in site.IisApplications)
             {
                 /* Skip apps that in different directory from Ac installation's folder in config */
                 if (!app.Path.StartsWith(_environment.GlobalPath, StringComparison.OrdinalIgnoreCase))
@@ -55,7 +56,7 @@ namespace PX.WebWizard.Acumatica.IisManagement
             }
         }
 
-        public IEnumerable<Installation> GetAllInstallations()
+        protected IEnumerable<Installation> GetAllInstallations()
         {
             foreach (var dir in _fileWrapper.GetChilds(_environment.GlobalPath))
             {

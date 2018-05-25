@@ -1,3 +1,4 @@
+using Abp.Dependency;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -6,7 +7,7 @@ using System.Linq;
 
 namespace PX.WebWizard.Acumatica.IisManagement
 {
-    public class FileWrapper : IFileWrapper
+    public class FileWrapper : IFileWrapper, ISingletonDependency
     {
         public string GetVersion(string filepath)
         {

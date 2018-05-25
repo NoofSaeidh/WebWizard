@@ -6,7 +6,7 @@ namespace PX.WebWizard.Acumatica.IisManagement
 {
     public class IisSite
     {
-        public IEnumerable<IisApplication> IISApplications { get; set; }
+        public IEnumerable<IisApplication> IisApplications { get; set; }
         public IEnumerable<string> Uris { get; set; }
     }
 }

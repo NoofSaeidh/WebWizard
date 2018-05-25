@@ -37,14 +37,14 @@ namespace PX.WebWizard.Tests.Acumatica.IisManagement
             };
             var site = new IisSite
             {
-                IISApplications = Enumerable.Repeat(iapp, 1),
+                IisApplications = Enumerable.Repeat(iapp, 1),
                 Uris = new List<string>
                 {
                     "http://machine/",
                     "https://machine:533/"
                 }
             };
-            var iismanager = Mock.Of<IIisManager>(m => m.GetIISSite(_environment.DefaultSiteName) == site);
+            var iismanager = Mock.Of<IIisManager>(m => m.GetIisSite(_environment.DefaultSiteName) == site);
 
             var filewrapper = new Mock<IFileWrapper>();
             filewrapper.Setup(f => f.GetChilds(_environment.GlobalPath)).Returns(Enumerable.Repeat(ipath, 1));
@@ -88,14 +88,14 @@ namespace PX.WebWizard.Tests.Acumatica.IisManagement
             };
             var site = new IisSite
             {
-                IISApplications = Enumerable.Repeat(iapp, 1),
+                IisApplications = Enumerable.Repeat(iapp, 1),
                 Uris = new List<string>
                 {
                     "http://machine/",
                     "https://machine:533/"
                 }
             };
-            var iismanager = Mock.Of<IIisManager>(m => m.GetIISSite(_environment.DefaultSiteName) == site);
+            var iismanager = Mock.Of<IIisManager>(m => m.GetIisSite(_environment.DefaultSiteName) == site);
 
             var filewrapper = new Mock<IFileWrapper>();
             filewrapper.Setup(f => f.GetChilds(_environment.GlobalPath)).Returns(Enumerable.Empty<string>());
