@@ -19,7 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\PX.WebWizard.Application\PX.WebWizard.Application.csproj" />
     <ProjectReference Include="..\..\src\PX.WebWizard.EntityFrameworkCore\PX.WebWizard.EntityFrameworkCore.csproj" />
-    <ProjectReference Include="..\FakeAcExe\PX.WebWizard.Tests.FakeAcExe.csproj" />
+    <ProjectReference Include="..\PX.WebWizard.Tests.FakeAcExe\PX.WebWizard.Tests.FakeAcExe.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.0" />

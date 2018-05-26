@@ -110,13 +110,12 @@ namespace PX.WebWizard.LongRun
             where TJob : LongRunBackgroundJob<TArgs>
         {
             LongRunInfo longRunInfo;
-            var longRunResult = new LongRunResult();
-
+            string longRunId;
             // i removed try catches for persisting.
             // let it be handled by unit of work and thorwing exceptions
             using (var unitOfWork = UnitOfWorkManager.Begin())
             {
-                var longRunId = _keyGenerator.Generate<string>();
+                longRunId = _keyGenerator.Generate<string>();
                 longRunInfo = new LongRunInfo
                 {
                     Id = longRunId,
@@ -125,8 +124,6 @@ namespace PX.WebWizard.LongRun
                     LongRunStatus = LongRunStatus.Queued,
                     Type = typeof(TJob).ToString(),
                 };
-                longRunResult.LongRunId = longRunId;
-                longRunResult.Queued = true;
                 await _longRunInfoRepo.InsertAsync(longRunInfo);
 
                 await unitOfWork.CompleteAsync();
@@ -140,15 +137,12 @@ namespace PX.WebWizard.LongRun
                 var longRunArgs = new LongRunArgs<TArgs>
                 {
                     Args = args,
-                    LongRunInfoId = longRunInfo.Id
+                    LongRunInfoId = longRunId
                 };
                 jobId = await EnqueueAsync<TJob, LongRunArgs<TArgs>>(longRunArgs, priority, delay);
-                longRunResult.JobId = jobId;
             }
             catch (Exception e)
             {
-                longRunResult.Queued = false;
-                longRunResult.Error = e.ToString();
                 try
                 {
                     using (var unitOfWork = UnitOfWorkManager.Begin())
@@ -163,7 +157,7 @@ namespace PX.WebWizard.LongRun
                 {
                     //todo: additional handler?
                 }
-                return longRunResult;
+                throw;
             }
 
             try
@@ -179,8 +173,12 @@ namespace PX.WebWizard.LongRun
             {
                 //todo: additional handler?
             }
-            
-            return longRunResult;
+
+            return new LongRunResult
+            {
+                LongRunId = longRunId,
+                JobId = jobId
+            };
         }
     }
 }
