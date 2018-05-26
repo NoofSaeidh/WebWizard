@@ -30,6 +30,7 @@ namespace PX.WebWizard.LongRun
             longRunInfo.LongRunStatus = LongRunStatus.InProcess;
             longRunInfo.Abortable = Abortable;
             LongRunInfoRepository.Update(longRunInfo);
+            CurrentUnitOfWork.SaveChanges();
 
             LongRunStatus? result = null;
             CancellationToken token;
@@ -45,7 +46,7 @@ namespace PX.WebWizard.LongRun
 
             try
             {
-                result = ExecuteRaw(args.Args, ref longRunInfo, token);
+                result = ExecuteRaw(args.Args, longRunInfo, token);
             }
             catch(Exception e)
             {
@@ -63,6 +64,6 @@ namespace PX.WebWizard.LongRun
         }
 
         // token only for Abortable Jobs
-        protected abstract LongRunStatus? ExecuteRaw(T args, ref LongRunInfo info, CancellationToken cancellationToken);
+        protected abstract LongRunStatus? ExecuteRaw(T args, LongRunInfo info, CancellationToken cancellationToken);
     }
 }

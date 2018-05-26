@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace PX.WebWizard.Acumatica.Wizard
 {
+    [Serializable]
     public class InstallationLoaderJobArgs
     {
         public string Version { get; set; }
@@ -28,7 +29,7 @@ namespace PX.WebWizard.Acumatica.Wizard
 
         public override bool Abortable => false;
 
-        protected override LongRunStatus? ExecuteRaw(InstallationLoaderJobArgs args, ref LongRunInfo info, CancellationToken cancellationToken)
+        protected override LongRunStatus? ExecuteRaw(InstallationLoaderJobArgs args, LongRunInfo info, CancellationToken cancellationToken)
         {
             if (!_installationLoader.TryFindInstallationPackage(args.Version, out var path))
             {

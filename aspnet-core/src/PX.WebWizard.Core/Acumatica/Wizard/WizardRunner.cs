@@ -8,18 +8,18 @@ namespace PX.WebWizard.Acumatica.Wizard
 {
     public class WizardRunner : IWizardRunner, ISingletonDependency
     {
-        public async Task RunAcExe(
+        public async Task RunAcExeAsync(
             string acExePath,
             WizardArgs args,
             DataReceivedEventHandler outputDataHandler = null,
             DataReceivedEventHandler errorDataHandler = null,
             CancellationToken? cancellationToken = null)
         {
-            await RunAcExe(acExePath, args.Serialize(), outputDataHandler, errorDataHandler, cancellationToken);
+            await RunProcessAsync(acExePath, args.Serialize(), outputDataHandler, errorDataHandler, cancellationToken);
         }
 
-        public async Task RunAcExe(
-            string acExePath,
+        public async Task RunProcessAsync(
+            string file,
             string args,
             DataReceivedEventHandler outputDataHandler = null,
             DataReceivedEventHandler errorDataHandler = null,
@@ -30,7 +30,7 @@ namespace PX.WebWizard.Acumatica.Wizard
                 EnableRaisingEvents = true,
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = acExePath,
+                    FileName = file,
                     Arguments = args,
 
                     CreateNoWindow = true,

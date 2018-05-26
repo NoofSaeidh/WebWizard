@@ -52,5 +52,26 @@ namespace PX.WebWizard.Acumatica
 
             return result;
         }
+
+        public async Task<LongRunResultDto> DeploySite(/*todo: input*/)
+        {
+            // todo: null checks??
+            var rawResult = await _backgroundJobManager.EnqueueLongRunAsync<WizardRunnerJob, WizardRunnerJobArgs>(
+                new WizardRunnerJobArgs
+                {
+                    AcExePath = @"..\..\..\test\PX.WebWizard.Tests.FakeAcExe\bin\Debug\AcWebTool.Tests.FakeAcExe.exe",
+                    WizardArgs = new WizardArgs.NewInstanceArgs
+                    {
+                        DatabaseConnectionNewUser = true,
+                        DatabaseUser = "someone"
+                    }.ToArgs()
+                });
+
+            var result = ObjectMapper.Map<LongRunResultDto>(rawResult);
+            // url service
+            result.ResultUrl = "{url}/" + result.LongRunId;
+
+            return result;
+        }
     }
 }
