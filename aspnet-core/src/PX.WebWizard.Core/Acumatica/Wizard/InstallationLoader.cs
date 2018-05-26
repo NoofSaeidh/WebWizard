@@ -10,6 +10,7 @@ using Abp.Dependency;
 
 namespace PX.WebWizard.Acumatica.Wizard
 {
+    //todo: abortable unzips (and copying)
     public class InstallationLoader : IInstallationLoader, ITransientDependency
     {
         public InstallationLoader(IOptionsSnapshot<AcumaticaSettings> acEnvironment)
