@@ -1,4 +1,5 @@
-﻿using PX.WebWizard.Acumatica.Dto;
+﻿using Abp.Domain.Uow;
+using PX.WebWizard.Acumatica.Dto;
 using PX.WebWizard.Acumatica.IisManagement;
 using PX.WebWizard.Acumatica.Wizard;
 using PX.WebWizard.LongRun;
@@ -10,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace PX.WebWizard.Acumatica
 {
+    [UnitOfWork(IsDisabled = true)]
     public class AcumaticaMaintAppService : WebWizardAppServiceBase
     {
         private readonly ILongRunBackgroundJobManager _backgroundJobManager;
@@ -32,7 +34,7 @@ namespace PX.WebWizard.Acumatica
         {
             return Task.FromResult(_acIisService.GetInstallations());
         }
-
+        
         public async Task<LongRunResultDto> DownloadInstallation(InstallationDownloadDto installation)
         {
             // todo: null checks??

@@ -1,5 +1,6 @@
 ﻿using Abp.Dependency;
 using Abp.Domain.Repositories;
+using Abp.Domain.Uow;
 using Abp.Threading.BackgroundWorkers;
 using Abp.Threading.Timers;
 using System;
@@ -12,6 +13,7 @@ using System.Threading.Tasks;
 
 namespace PX.WebWizard.LongRun
 {
+    [UnitOfWork(IsDisabled = true)]
     public class LongRunCancellationWorker : PeriodicBackgroundWorkerBase, ILongRunCancellationWorker, ISingletonDependency
     {
         private readonly Dictionary<string, CancellationTokenSource> _tokenSources;

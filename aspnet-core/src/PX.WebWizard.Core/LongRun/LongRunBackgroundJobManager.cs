@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 
 namespace PX.WebWizard.LongRun
 {
+    [UnitOfWork(IsDisabled = true)]
     public class LongRunBackgroundJobManager : BackgroundJobManager, ILongRunBackgroundJobManager, ISingletonDependency
     {
         private readonly IRepository<LongRunInfo, string> _longRunInfoRepo;
@@ -29,7 +30,6 @@ namespace PX.WebWizard.LongRun
             _keyGenerator = keyGenerator;
         }
 
-        [UnitOfWork]
         public async Task<LongRunAbortResult> AbortLongRunAsync(string longRunId)
         {
             LongRunInfo longRunInfo;
@@ -105,17 +105,17 @@ namespace PX.WebWizard.LongRun
             }
         }
 
-        [UnitOfWork]
         public async Task<LongRunResult> EnqueueLongRunAsync<TJob, TArgs>(TArgs args,
             BackgroundJobPriority priority = BackgroundJobPriority.Normal, TimeSpan? delay = null)
             where TJob : LongRunBackgroundJob<TArgs>
         {
             LongRunInfo longRunInfo;
             var longRunResult = new LongRunResult();
-            try
-            {
-                // try persist info about operation to db
 
+            // i removed try catches for persisting.
+            // let it be handled by unit of work and thorwing exceptions
+            using (var unitOfWork = UnitOfWorkManager.Begin())
+            {
                 var longRunId = _keyGenerator.Generate<string>();
                 longRunInfo = new LongRunInfo
                 {
@@ -126,17 +126,14 @@ namespace PX.WebWizard.LongRun
                     Type = typeof(TJob).ToString(),
                 };
                 longRunResult.LongRunId = longRunId;
+                longRunResult.Queued = true;
                 await _longRunInfoRepo.InsertAsync(longRunInfo);
-            }
-            catch (Exception e)
-            {
-                // if fail return info about error
-                longRunResult.Queued = false;
-                longRunResult.Error = e.ToString();
-                return longRunResult;
+
+                await unitOfWork.CompleteAsync();
             }
 
-            var resultExceptions = new List<Exception>();
+
+            string jobId;
             try
             {
                 // try to queue job
@@ -145,33 +142,44 @@ namespace PX.WebWizard.LongRun
                     Args = args,
                     LongRunInfoId = longRunInfo.Id
                 };
-                var jobId = await EnqueueAsync<TJob, LongRunArgs<TArgs>>(longRunArgs, priority, delay);
-                // if succed return info with id's of db info and job id
-                longRunResult.Queued = true;
-                longRunResult.JobId = longRunInfo.JobId = jobId;
+                jobId = await EnqueueAsync<TJob, LongRunArgs<TArgs>>(longRunArgs, priority, delay);
+                longRunResult.JobId = jobId;
             }
             catch (Exception e)
             {
-                // if failed return error
                 longRunResult.Queued = false;
-                resultExceptions.Add(e);
-                longRunInfo.Error = e.ToString();
-                longRunInfo.LongRunStatus = LongRunStatus.QueueFailed;
-
+                longRunResult.Error = e.ToString();
+                try
+                {
+                    using (var unitOfWork = UnitOfWorkManager.Begin())
+                    {
+                        longRunInfo = await _longRunInfoRepo.GetAsync(longRunInfo.Id);
+                        longRunInfo.LongRunStatus = LongRunStatus.QueueFailed;
+                        longRunInfo.Error = e.ToString();
+                        await unitOfWork.CompleteAsync();
+                    }
+                }
+                catch (Exception)
+                {
+                    //todo: additional handler?
+                }
+                return longRunResult;
             }
 
             try
             {
-                await _longRunInfoRepo.UpdateAsync(longRunInfo);
+                using (var unitOfWork = UnitOfWorkManager.Begin())
+                {
+                    longRunInfo = await _longRunInfoRepo.GetAsync(longRunInfo.Id);
+                    longRunInfo.JobId = jobId;
+                    await unitOfWork.CompleteAsync();
+                }
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                resultExceptions.Add(e);
+                //todo: additional handler?
             }
-
-            if (resultExceptions.Any())
-                longRunResult.Error = new AggregateException(resultExceptions).ToString();
-
+            
             return longRunResult;
         }
     }
