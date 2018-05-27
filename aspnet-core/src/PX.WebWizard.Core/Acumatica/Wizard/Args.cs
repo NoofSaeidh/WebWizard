@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -11,34 +12,81 @@ namespace PX.WebWizard.Acumatica.Wizard
     [Serializable]
     public class Args : IDictionary<string, object>
     {
-        private Type _thisType;
-        private readonly Dictionary<string, object> _collection;
+        private Type _cachedType;
+        private readonly Dictionary<string, object> _items;
 
+        private readonly PropertyInfo[] _cachedProperties;
+        // may contains duplicated values (from Property name and from Argument attribute)
+        private readonly Dictionary<string, PropertyInfo> _cachedPropertiesByKeys;
+
+        private static readonly Dictionary<Type, (PropertyInfo[], Dictionary<string, PropertyInfo>)>
+            _cachedPropertiesByType = new Dictionary<Type, (PropertyInfo[], Dictionary<string, PropertyInfo>)>();
 
         public Args()
         {
-            //TODO args count
-            _collection = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-        }
+            _cachedType = GetType();
+            _items = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
-        private Type ThisType => _thisType ?? (_thisType = this.GetType());
+            lock (((ICollection)_cachedPropertiesByType).SyncRoot)
+            {
+                if (!_cachedPropertiesByType.ContainsKey(_cachedType))
+                {
+                    _cachedProperties = _cachedType
+                        .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                        .Where(prop => prop.CanRead && prop.CanWrite
+                                    && prop.GetCustomAttribute<NotArgumentAttribute>() == null
+                                    && prop.GetIndexParameters().Length == 0)
+                        .ToArray();
+
+                    PropertiesCount = _cachedProperties.Length;
+
+                    var tmpCollection = _cachedProperties
+                        .Where(prop => prop.GetCustomAttribute<ArgumentAttribute>() != null)
+                        .Select(prop =>
+                        {
+                            var arg = prop.GetCustomAttribute<ArgumentAttribute>();
+                            return (prop, arg);
+                        });
+
+                    _cachedPropertiesByKeys = tmpCollection
+                        .Where(p => p.arg != null && p.arg.Name != null)
+                        .Select(p => (p.arg.Name, p.prop))
+                        .Union(tmpCollection
+                            .Select(p => (p.prop.Name, p.prop)))
+                        .ToDictionary(p => p.Name, p => p.prop);
+
+                    _cachedPropertiesByType.Add(_cachedType,
+                        (_cachedProperties, _cachedPropertiesByKeys));
+                }
+                else
+                {
+                    (_cachedProperties, _cachedPropertiesByKeys) = _cachedPropertiesByType[_cachedType];
+                    PropertiesCount = _cachedProperties.Length;
+                }
+            }
+        }
 
         public object this[string key]
         {
             get
             {
-                if (this.TryGetValue(key, out object result))
-                    return result;
-                else return null;
+                if (this.TryGetValue(key, out var propRes))
+                    return propRes;
+
+                throw new KeyNotFoundException();
             }
             set
             {
                 if (!TrySetPropertyValue(key, value))
                 {
-                    _collection[key] = value;
+                    _items[key] = value;
                 }
             }
         }
+
+        [NotArgument]
+        public int Count => PropertiesCount + _items.Count;
+
 
         public bool TryGetValue(string key, out object value)
         {
@@ -47,7 +95,7 @@ namespace PX.WebWizard.Acumatica.Wizard
                 return true;
             }
 
-            if (_collection.TryGetValue(key, out value))
+            if (_items.TryGetValue(key, out value))
             {
                 return true;
             }
@@ -60,37 +108,37 @@ namespace PX.WebWizard.Acumatica.Wizard
         {
             if (GetProperty(key) != null)
                 throw new InvalidOperationException($"Cannot add element with key {key}, because property with such key already exists.");
-            _collection.Add(key, value);
+            _items.Add(key, value);
         }
 
         public bool ContainsKey(string key)
         {
-            return ContainsPropertyKey(key) || _collection.ContainsKey(key);
+            return ContainsPropertyKey(key) || _items.ContainsKey(key);
         }
 
         public bool Remove(string key)
         {
             if (GetProperty(key) != null)
                 return false;
-            return _collection.Remove(key);
+            return _items.Remove(key);
         }
 
         public void Clear()
         {
             ClearProperties();
-            _collection.Clear();
+            _items.Clear();
         }
 
         public string Serialize()
         {
             var sb = new StringBuilder();
-            foreach (var prop in GetPublicProperties().Select(x => x.Name))
+            foreach (var prop in _cachedProperties)
             {
                 if (TryGetPropertyValue(prop, out var value, out var outkey, out var argType))
-                sb.Append(SerializeArgument(outkey, value, argType));
+                    sb.Append(SerializeArgument(outkey, value, argType));
                 sb.Append(" ");
             }
-            foreach (var item in _collection)
+            foreach (var item in _items)
             {
                 sb.Append(SerializeArgument(item.Key, item.Value));
                 sb.Append(" ");
@@ -113,16 +161,7 @@ namespace PX.WebWizard.Acumatica.Wizard
             return new Enumerator(this);
         }
 
-        protected IEnumerable<KeyValuePair<string, object>> GetProperties()
-        {
-            foreach (var prop in GetPublicProperties().Select(x => x.Name))
-            {
-                if (TryGetPropertyValue(prop, out var value, out var outkey, out var argType))
-                    yield return new KeyValuePair<string, object>(outkey, value);
-            }
-        }
-
-        protected int PropertiesCount => GetPublicProperties().Count();
+        protected int PropertiesCount { get; }
 
         protected bool ContainsPropertyKey(string key)
         {
@@ -131,7 +170,7 @@ namespace PX.WebWizard.Acumatica.Wizard
 
         protected void ClearProperties()
         {
-            foreach (var prop in GetPublicProperties())
+            foreach (var prop in _cachedProperties)
             {
                 try
                 {
@@ -149,22 +188,30 @@ namespace PX.WebWizard.Acumatica.Wizard
             var prop = GetProperty(key);
             outkey = null;
             value = null;
-            argumentType = default(ArgumentType);
+            argumentType = default;
 
             if (prop != null)
             {
-                try
-                {
-                    value = prop.GetValue(this);
-                    outkey = GetPropertyKey(prop, out argumentType);
-                    return true;
-                }
-                catch
-                {
-                    return false;
-                }
+                return TryGetPropertyValue(prop, out value, out outkey, out argumentType);
             }
             return false;
+        }
+
+        protected bool TryGetPropertyValue(PropertyInfo property, out object value, out string outkey, out ArgumentType argumentType)
+        {
+            try
+            {
+                value = property.GetValue(this);
+                outkey = GetPropertyKey(property, out argumentType);
+                return true;
+            }
+            catch
+            {
+                argumentType = default;
+                outkey = null;
+                value = null;
+                return false;
+            }
         }
 
         protected bool TrySetPropertyValue(string key, object value)
@@ -201,27 +248,27 @@ namespace PX.WebWizard.Acumatica.Wizard
                 case ArgumentType.Object:
                     return $"-{key}:\"{SerializeObject(value)}\"";
                 case ArgumentType.Enumerable:
+                {
+                    if (!(value is IEnumerable e))
+                        throw new InvalidOperationException($"Value {value} is not IEnumerable.");
+                    var res = new StringBuilder();
+                    foreach (var item in e)
                     {
-                        if (!(value is IEnumerable e))
-                            throw new InvalidOperationException($"Value {value} is not IEnumerable.");
-                        var res = new StringBuilder();
-                        foreach (var item in e)
-                        {
-                            res.Append($"-{key}:\"{item}\" ");
-                        }
-                        return res.ToString().Trim();
+                        res.Append($"-{key}:\"{item}\" ");
                     }
+                    return res.ToString().Trim();
+                }
                 case ArgumentType.Object | ArgumentType.Enumerable:
+                {
+                    if (!(value is IEnumerable e))
+                        throw new InvalidOperationException($"Value {value} is not IEnumerable.");
+                    var res = new StringBuilder();
+                    foreach (var item in e)
                     {
-                        if (!(value is IEnumerable e))
-                            throw new InvalidOperationException($"Value {value} is not IEnumerable.");
-                        var res = new StringBuilder();
-                        foreach (var item in e)
-                        {
-                            res.Append($"-{key}:\"{SerializeObject(item)}\" ");
-                        }
-                        return res.ToString().Trim();
+                        res.Append($"-{key}:\"{SerializeObject(item)}\" ");
                     }
+                    return res.ToString().Trim();
+                }
                 default:
                     throw new NotSupportedException($"{nameof(ArgumentType)} {type} is not supported.");
             }
@@ -252,45 +299,44 @@ namespace PX.WebWizard.Acumatica.Wizard
 
         private PropertyInfo GetProperty(string key)
         {
-            return ThisType
-                .GetProperties()
-                .SingleOrDefault(p => p.GetCustomAttribute<ArgumentAttribute>()?.Name == key)
-                ?? ThisType.GetProperty(key);
+            if (_cachedPropertiesByKeys.TryGetValue(key, out var result))
+                return result;
+            return null;
         }
 
         private string GetPropertyKey(PropertyInfo property, out ArgumentType argumentType)
         {
-
             var arg = property.GetCustomAttribute<ArgumentAttribute>();
-            argumentType = arg?.ArgumentType ?? default(ArgumentType);
-            return arg?.Name ?? property.Name;
+            if (arg == null)
+            {
+                argumentType = default;
+                return property.Name;
+            }
+            argumentType = arg.ArgumentType;
+            return arg.Name ?? property.Name;
         }
-
-        private IEnumerable<PropertyInfo> GetPublicProperties() => ThisType.GetProperties(BindingFlags.SetProperty | BindingFlags.Public | BindingFlags.Instance);
 
         #region Explicit Dictionary Implementation
 
-        ICollection<string> IDictionary<string, object>.Keys => _collection.Keys.Union(GetProperties().Select(x => x.Key)).ToList();
+        ICollection<string> IDictionary<string, object>.Keys => _cachedPropertiesByKeys.Keys.Union(_items.Keys).ToArray();
 
-        ICollection<object> IDictionary<string, object>.Values => _collection.Values.Union(GetProperties().Select(x => x.Value)).ToList();
-
-        int ICollection<KeyValuePair<string, object>>.Count => PropertiesCount + _collection.Count;
+        ICollection<object> IDictionary<string, object>.Values => _cachedProperties.Union(_items.Values).ToArray();
 
         bool ICollection<KeyValuePair<string, object>>.IsReadOnly => false;
 
         void ICollection<KeyValuePair<string, object>>.Add(KeyValuePair<string, object> item)
         {
             if (!TrySetPropertyValue(item.Key, item.Value))
-                ((ICollection<KeyValuePair<string, object>>)_collection).Add(item);
+                ((ICollection<KeyValuePair<string, object>>)_items).Add(item);
         }
 
         bool ICollection<KeyValuePair<string, object>>.Contains(KeyValuePair<string, object> item)
         {
-            if(TryGetPropertyValue(item.Key,out var value, out _, out _))
+            if (TryGetPropertyValue(item.Key, out var value, out _, out _))
             {
                 return item.Value == value;
             }
-            return ((ICollection<KeyValuePair<string, object>>)_collection).Contains(item);
+            return ((ICollection<KeyValuePair<string, object>>)_items).Contains(item);
         }
 
         void ICollection<KeyValuePair<string, object>>.CopyTo(KeyValuePair<string, object>[] array, int arrayIndex)
@@ -300,8 +346,7 @@ namespace PX.WebWizard.Acumatica.Wizard
             if (arrayIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, $"{arrayIndex} is less than 0.");
 
-            var count = this.Count();
-            if (count > array.Length - arrayIndex)
+            if (Count > array.Length - arrayIndex)
                 throw new ArgumentException($"The number of elements in the source {nameof(ICollection<KeyValuePair<string, object>>)}" +
                     $"is greater than the available space from {nameof(arrayIndex)} to the end of the destination array.");
 
@@ -317,7 +362,7 @@ namespace PX.WebWizard.Acumatica.Wizard
         {
             if (GetProperty(item.Key) != null)
                 return false;
-            return ((ICollection<KeyValuePair<string, object>>)_collection).Remove(item);
+            return ((ICollection<KeyValuePair<string, object>>)_items).Remove(item);
         }
 
         IEnumerator<KeyValuePair<string, object>> IEnumerable<KeyValuePair<string, object>>.GetEnumerator() => GetEnumerator();
@@ -342,8 +387,16 @@ namespace PX.WebWizard.Acumatica.Wizard
             {
                 _args = args;
                 _usePropEnum = true;
-                _propEnumerator = args.GetProperties().GetEnumerator();
-                _dictEnumerator = args._collection.GetEnumerator();
+                _propEnumerator = args
+                    ._cachedProperties
+                    .Select(p =>
+                    {
+                        args.TryGetPropertyValue(p, out var value, out var outkey, out _);
+                        return new KeyValuePair<string, object>(outkey, value);
+                    })
+                    .Where(x => x.Key != null)
+                    .GetEnumerator();
+                _dictEnumerator = args._items.GetEnumerator();
             }
 
             public bool MoveNext()

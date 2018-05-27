@@ -132,9 +132,6 @@ namespace PX.WebWizard.Acumatica.Wizard
         [Argument("fulllog")]
         public bool? FullLogMode { get; set; }
 
-        [Argument("ipath")]
-        public string ApplicationInstanceDirectory { get; set; }
-
         public class NewInstanceArgs
         {
             public string DatabaseServerName { get; set; }
@@ -147,7 +144,7 @@ namespace PX.WebWizard.Acumatica.Wizard
             public string WebSiteName { get; set; }
             public string VirtualDirectoryName { get; set; }
             public string ApplicationPoolName { get; set; }
-            public string ApplicationInstanceDirectory { get; set; }
+            public string InstancePath { get; set; }
             public List<Company> NewCompanies { get; } = new List<Company>{new Company
             {
                 CompanyID = 1,
@@ -172,7 +169,7 @@ namespace PX.WebWizard.Acumatica.Wizard
                     WebSiteName = WebSiteName,
                     VirtualDirectoryName = VirtualDirectoryName,
                     ApplicationPoolName = ApplicationPoolName,
-                    ApplicationInstanceDirectory = ApplicationInstanceDirectory,
+                    InstancePath = InstancePath,
                     Companies = NewCompanies,
                 };
             }

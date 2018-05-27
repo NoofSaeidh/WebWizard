@@ -21,4 +21,9 @@ namespace PX.WebWizard.Acumatica.Wizard
         public string Alias { get; }
         public ArgumentType ArgumentType { get; set; }
     }
+
+    [AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
+    sealed class NotArgumentAttribute : Attribute
+    {
+    }
 }
