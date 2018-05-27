@@ -59,12 +59,12 @@ namespace PX.WebWizard.Acumatica
             var rawResult = await _backgroundJobManager.EnqueueLongRunAsync<WizardRunnerJob, WizardRunnerJobArgs>(
                 new WizardRunnerJobArgs
                 {
-                    AcExePath = @"..\..\..\test\PX.WebWizard.Tests.FakeAcExe\bin\Debug\AcWebTool.Tests.FakeAcExe.exe",
+                    AcExePath = @"..\\..\\test\\PX.WebWizard.Tests.FakeAcExe\\bin\\Debug\\PX.WebWizard.Tests.FakeAcExe.exe",
                     WizardArgs = new WizardArgs.NewInstanceArgs
                     {
                         DatabaseConnectionNewUser = true,
                         DatabaseUser = "someone"
-                    }.ToArgs()
+                    }.ToArgs().ToString()
                 });
 
             var result = ObjectMapper.Map<LongRunResultDto>(rawResult);

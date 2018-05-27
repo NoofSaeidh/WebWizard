@@ -1,4 +1,5 @@
-﻿using PX.WebWizard.LongRun;
+﻿using Abp.Dependency;
+using PX.WebWizard.LongRun;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,11 +12,11 @@ namespace PX.WebWizard.Acumatica.Wizard
     [Serializable]
     public class WizardRunnerJobArgs
     {
-        public WizardArgs WizardArgs { get; set; }
+        public string WizardArgs { get; set; }
         public string AcExePath { get; set; }
     }
 
-    public class WizardRunnerJob : LongRunBackgroundJob<WizardRunnerJobArgs>
+    public class WizardRunnerJob : LongRunBackgroundJob<WizardRunnerJobArgs>, ITransientDependency
     {
         private readonly IWizardRunner _wizardRunner;
 
@@ -32,15 +33,11 @@ namespace PX.WebWizard.Acumatica.Wizard
             _wizardRunner.RunAcExeAsync(args.AcExePath, args.WizardArgs,
                 (s, e) =>
                 {
-                    info.Message += Environment.NewLine + e.Data;
-                    LongRunInfoRepository.Update(info);
-                    CurrentUnitOfWork.SaveChanges();
+                    PersistProgress(new PersistProgressArgs { LongRunId = info.Id, Data = e.Data });
                 },
                 (s, e) =>
                 {
-                    info.Error += Environment.NewLine + e.Data;
-                    LongRunInfoRepository.Update(info);
-                    CurrentUnitOfWork.SaveChanges();
+                    PersistProgress(new PersistProgressArgs { LongRunId = info.Id, Error = e.Data });
                     result = LongRunStatus.Failed;
                 },
                 cancellationToken)

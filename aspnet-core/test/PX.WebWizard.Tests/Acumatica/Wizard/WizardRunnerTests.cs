@@ -41,7 +41,7 @@ namespace PX.WebWizard.Tests.Acumatica.Wizard
             var runner = new WizardRunner();
             var args = JoinArgs(FakeAcExeProgram.Throw, "throw message");
             // Act
-            Func<Task> act = async () => await runner.RunProcessAsync(_fakeAcExePath, args);
+            Func<Task> act = async () => await runner.RunAcExeAsync(_fakeAcExePath, args);
             // Assert
             await Assert.ThrowsAsync<ProcessExecutionException>(act);
         }

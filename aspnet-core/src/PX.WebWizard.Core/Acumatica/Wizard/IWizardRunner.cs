@@ -12,5 +12,12 @@ namespace PX.WebWizard.Acumatica.Wizard
             DataReceivedEventHandler outputDataHandler = null, 
             DataReceivedEventHandler errorDataHandler = null, 
             CancellationToken? cancellationToken = null);
+
+        Task RunAcExeAsync(
+            string acExePath,
+            string args,
+            DataReceivedEventHandler outputDataHandler = null,
+            DataReceivedEventHandler errorDataHandler = null,
+            CancellationToken? cancellationToken = null);
     }
 }

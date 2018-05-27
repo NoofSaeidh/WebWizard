@@ -15,10 +15,10 @@ namespace PX.WebWizard.Acumatica.Wizard
             DataReceivedEventHandler errorDataHandler = null,
             CancellationToken? cancellationToken = null)
         {
-            await RunProcessAsync(acExePath, args.Serialize(), outputDataHandler, errorDataHandler, cancellationToken);
+            await RunAcExeAsync(acExePath, args.Serialize(), outputDataHandler, errorDataHandler, cancellationToken);
         }
 
-        public async Task RunProcessAsync(
+        public async Task RunAcExeAsync(
             string file,
             string args,
             DataReceivedEventHandler outputDataHandler = null,
