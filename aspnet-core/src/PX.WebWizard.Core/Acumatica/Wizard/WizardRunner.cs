@@ -62,7 +62,7 @@ namespace PX.WebWizard.Acumatica.Wizard
                     if (errorDataHandler == null)
                         errorMessage = process.StandardError.ReadToEnd();
                     //todo: error message in other case
-                    tcs.SetException(new ProcessExecutionException(errorMessage, process.StartInfo.FileName, process.ExitCode));
+                    tcs.TrySetException(new ProcessExecutionException(errorMessage, process.StartInfo.FileName, process.ExitCode));
                 }
                 else
                 {
@@ -87,7 +87,13 @@ namespace PX.WebWizard.Acumatica.Wizard
             process.BeginOutputReadLine();
 
             if (cancellationToken != null)
-                cancellationToken.Value.Register(process.Kill);
+            {
+                cancellationToken.Value.Register(() =>
+                {
+                    tcs.TrySetCanceled(cancellationToken.Value);
+                    process.Kill();
+                });
+            }
             await tcs.Task;
         }
     }

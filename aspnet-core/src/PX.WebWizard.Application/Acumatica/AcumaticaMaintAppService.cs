@@ -3,6 +3,7 @@ using PX.WebWizard.Acumatica.Dto;
 using PX.WebWizard.Acumatica.IisManagement;
 using PX.WebWizard.Acumatica.Wizard;
 using PX.WebWizard.LongRun;
+using PX.WebWizard.LongRun.Dto;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -53,18 +54,14 @@ namespace PX.WebWizard.Acumatica
             return result;
         }
 
-        public async Task<LongRunResultDto> DeploySite(/*todo: input*/)
+        public async Task<LongRunResultDto> DeploySite(string arguments)
         {
             // todo: null checks??
             var rawResult = await _backgroundJobManager.EnqueueLongRunAsync<WizardRunnerJob, WizardRunnerJobArgs>(
                 new WizardRunnerJobArgs
                 {
                     AcExePath = @"..\\..\\test\\PX.WebWizard.Tests.FakeAcExe\\bin\\Debug\\PX.WebWizard.Tests.FakeAcExe.exe",
-                    WizardArgs = new WizardArgs.NewInstanceArgs
-                    {
-                        DatabaseConnectionNewUser = true,
-                        DatabaseUser = "someone"
-                    }.ToArgs().ToString()
+                    WizardArgs = arguments
                 });
 
             var result = ObjectMapper.Map<LongRunResultDto>(rawResult);

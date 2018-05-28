@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PX.WebWizard.Tests.FakeAcExe
@@ -11,10 +12,11 @@ namespace PX.WebWizard.Tests.FakeAcExe
         public const string WriteLine = "writeline";
         public const string Write = "write";
         public const string Throw = "throw";
-
+        public const string LongRun = "longrun";
 
         static void Main(string[] args)
         {
+            // check first word, if it not started from "-"
             var action = WriteLine;
             IEnumerable<string> newArgs = args;
             if (!args[0].StartsWith("-"))
@@ -34,6 +36,9 @@ namespace PX.WebWizard.Tests.FakeAcExe
                 case Throw:
                     ThrowException(string.Join(" ", newArgs));
                     break;
+                case LongRun:
+                    WriteLongRun(newArgs);
+                    break;
                 default:
                     throw new InvalidOperationException($"Invalid action specified: {action}");
             }
@@ -51,6 +56,15 @@ namespace PX.WebWizard.Tests.FakeAcExe
         static void WriteArgs(IEnumerable<string> args)
         {
             Console.Write(string.Join(" ", args));
+        }
+
+        static void WriteLongRun(IEnumerable<string> args)
+        {
+            foreach (var arg in args)
+            {
+                Console.WriteLine(arg);
+                Thread.Sleep(5000);
+            }
         }
     }
 }

@@ -19,9 +19,9 @@ namespace PX.WebWizard.LongRun
 
     public enum LongRunAbortStatus
     {
-        Aborted,
+        ExecutionAborted,
+        QueueAborted,
         AbortFailed,
-        CannotAbort,
-        Unqueued,
+        NotAbortable,
     }
 }

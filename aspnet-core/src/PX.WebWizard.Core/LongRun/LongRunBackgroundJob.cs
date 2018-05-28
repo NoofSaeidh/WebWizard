@@ -18,21 +18,26 @@ namespace PX.WebWizard.LongRun
 
         public IRepository<LongRunInfo, string> LongRunInfoRepository { get; set; }
 
-        public ILongRunCancellationWorker LongRunCancellationWorker { get; set; }
+        public ICancellationWorker CancellationWorker { get; set; }
 
         protected void PersistProgress(PersistProgressArgs args)
         {
             if (args == null || args.LongRunId == null)
                 throw new ArgumentException(nameof(args));
+            if (args.Data == null && args.Error == null)
+                return;
 
             using (var unitOfWork = UnitOfWorkManager.Begin())
             {
                 var longRunInfo = LongRunInfoRepository.Get(args.LongRunId);
 
                 if (args.Data != null)
-                    longRunInfo.Message += Environment.NewLine + args.Data;
+                    longRunInfo.Message += args.Data;
                 if (args.Error != null)
-                    longRunInfo.Error += Environment.NewLine + args.Error;
+                    longRunInfo.Error += 
+                        string.IsNullOrEmpty(longRunInfo.Error)
+                        ? args.Error
+                        : Environment.NewLine + args.Error;
 
                 unitOfWork.Complete();
             }
@@ -44,8 +49,7 @@ namespace PX.WebWizard.LongRun
             using (var unitOfWork = UnitOfWorkManager.Begin())
             {
                 longRunInfo = LongRunInfoRepository.Get(args.LongRunInfoId);
-                if (longRunInfo.LongRunStatus == LongRunStatus.QueueAborted
-                    || longRunInfo.LongRunStatus == LongRunStatus.Aborted)
+                if (longRunInfo.LongRunStatus != LongRunStatus.Queued)
                     return;
 
                 longRunInfo.LongRunStatus = LongRunStatus.InProcess;
@@ -56,8 +60,7 @@ namespace PX.WebWizard.LongRun
             CancellationToken token;
             if (Abortable)
             {
-                LongRunCancellationWorker.PushLongRun(longRunInfo.Id);
-                token = LongRunCancellationWorker.Tokens[longRunInfo.Id];
+                token = CancellationWorker.AddOrGet(longRunInfo.Id);
             }
             else
             {
@@ -76,16 +79,16 @@ namespace PX.WebWizard.LongRun
             using (var unitOfWork = UnitOfWorkManager.Begin())
             {
                 longRunInfo = LongRunInfoRepository.Get(longRunInfo.Id);
-                if(error != null)
-                {
-                    longRunInfo.Error += error;
-                }
+                if (error != null)
+                    longRunInfo.Error += 
+                        string.IsNullOrEmpty(longRunInfo.Error)
+                        ? error
+                        : Environment.NewLine + error;
                 if (result != null)
-                {
                     longRunInfo.LongRunStatus = result.Value;
-                }
                 unitOfWork.Complete();
             }
+            CancellationWorker.Remove(longRunInfo.Id);
         }
 
         // token only for Abortable Jobs

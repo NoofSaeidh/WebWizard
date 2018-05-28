@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PX.WebWizard.LongRun
+namespace PX.WebWizard.LongRun.Dto
 {
     [AutoMapFrom(typeof(LongRunResult), MemberList = AutoMapper.MemberList.Source)]
     public class LongRunResultDto

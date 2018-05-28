@@ -75,7 +75,7 @@ namespace PX.WebWizard.Web.Host.Startup
             {
                 options.SwaggerDoc("v1", new Info { Title = "WebWizard API", Version = "v1" });
                 options.DocInclusionPredicate((docName, description) => true);
-
+                
                 // Define the BearerAuth scheme that's in use
                 options.AddSecurityDefinition("bearerAuth", new ApiKeyScheme()
                 {
@@ -86,6 +86,8 @@ namespace PX.WebWizard.Web.Host.Startup
                 });
                 // Assign scope requirements to operations based on AuthorizeAttribute
                 options.OperationFilter<SecurityRequirementsOperationFilter>();
+
+                options.DescribeAllEnumsAsStrings();
             });
 
             // Configure Abp and Dependency Injection

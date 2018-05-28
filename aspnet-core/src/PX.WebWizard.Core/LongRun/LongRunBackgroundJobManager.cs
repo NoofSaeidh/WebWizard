@@ -19,62 +19,43 @@ namespace PX.WebWizard.LongRun
     {
         private readonly IRepository<LongRunInfo, string> _longRunInfoRepo;
         private readonly IKeyGenerator _keyGenerator;
+        private readonly ICancellationWorker _cancellationWorker;
 
         public LongRunBackgroundJobManager(IIocResolver iocResolver,
             IBackgroundJobStore store, AbpTimer timer,
             IRepository<LongRunInfo, string> longRunInfoRepo,
-            IKeyGenerator keyGenerator)
+            IKeyGenerator keyGenerator,
+            ICancellationWorker cancellationWorker)
             : base(iocResolver, store, timer)
         {
             _longRunInfoRepo = longRunInfoRepo;
             _keyGenerator = keyGenerator;
+            _cancellationWorker = cancellationWorker;
         }
 
         public async Task<LongRunAbortResult> AbortLongRunAsync(string longRunId)
         {
             LongRunInfo longRunInfo;
-            try
-            {
-                longRunInfo = await _longRunInfoRepo.GetAsync(longRunId);
-            }
-            catch (Exception e)
-            {
-                return new LongRunAbortResult
-                {
-                    AbortStatus = LongRunAbortStatus.AbortFailed,
-                    Error = e.ToString()
-                };
-            }
+            longRunInfo = await _longRunInfoRepo.GetAsync(longRunId);
+
 
             // check if background worker didn't start operation and try to delete from queue 
             if (!string.IsNullOrEmpty(longRunInfo.JobId)
                 && longRunInfo.LongRunStatus == LongRunStatus.Queued)
             {
-                bool aborted;
-                try
-                {
-                    aborted = await DeleteAsync(longRunInfo.JobId);
-                }
-                catch (Exception)
-                {
-                    aborted = false;
-                }
+                var aborted = await DeleteAsync(longRunInfo.JobId);
                 if (aborted)
                 {
-                    longRunInfo.LongRunStatus = LongRunStatus.QueueAborted;
-                    var abortResult = new LongRunAbortResult
+                    using (var unitOfWork = UnitOfWorkManager.Begin())
                     {
-                        AbortStatus = LongRunAbortStatus.Unqueued
+                        longRunInfo.LongRunStatus = LongRunStatus.QueueAborted;
+                        await unitOfWork.CompleteAsync();
+                    }
+
+                    return new LongRunAbortResult
+                    {
+                        AbortStatus = LongRunAbortStatus.QueueAborted
                     };
-                    try
-                    {
-                        await _longRunInfoRepo.UpdateAsync(longRunInfo);
-                    }
-                    catch (Exception e)
-                    {
-                        abortResult.Error = e.ToString();
-                    }
-                    return abortResult;
                 }
             }
 
@@ -82,27 +63,28 @@ namespace PX.WebWizard.LongRun
             {
                 return new LongRunAbortResult
                 {
-                    AbortStatus = LongRunAbortStatus.CannotAbort
+                    AbortStatus = LongRunAbortStatus.NotAbortable
                 };
             }
 
-            try
+            var result = _cancellationWorker.RequestCancellation(longRunId);
+            if (result)
             {
-                longRunInfo.LongRunStatus = LongRunStatus.Aborted;
-                await _longRunInfoRepo.UpdateAsync(longRunInfo);
+                using (var unitOfWork = UnitOfWorkManager.Begin())
+                {
+                    longRunInfo.LongRunStatus = LongRunStatus.Aborted;
+                    await unitOfWork.CompleteAsync();
+                }
+
                 return new LongRunAbortResult
                 {
-                    AbortStatus = LongRunAbortStatus.Aborted
+                    AbortStatus = LongRunAbortStatus.QueueAborted
                 };
             }
-            catch (Exception e)
+            return new LongRunAbortResult
             {
-                return new LongRunAbortResult
-                {
-                    AbortStatus = LongRunAbortStatus.AbortFailed,
-                    Error = e.ToString()
-                };
-            }
+                AbortStatus = LongRunAbortStatus.AbortFailed
+            };
         }
 
         public async Task<LongRunResult> EnqueueLongRunAsync<TJob, TArgs>(TArgs args,

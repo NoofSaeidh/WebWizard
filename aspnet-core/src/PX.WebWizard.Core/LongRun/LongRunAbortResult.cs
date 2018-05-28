@@ -3,6 +3,6 @@
     public class LongRunAbortResult
     {
         public LongRunAbortStatus AbortStatus { get; set; }
-        public string Error { get; set; }
+        //public string Error { get; set; }
     }
 }
