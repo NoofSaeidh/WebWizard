@@ -3,6 +3,8 @@ using Microsoft.Extensions.Configuration;
 using Abp.Modules;
 using Abp.Reflection.Extensions;
 using PX.WebWizard.Configuration;
+using Microsoft.Extensions.Options;
+using Abp.Configuration.Startup;
 
 namespace PX.WebWizard.Web.Host.Startup
 {
@@ -17,6 +19,11 @@ namespace PX.WebWizard.Web.Host.Startup
         {
             _env = env;
             _appConfiguration = env.GetAppConfiguration();
+        }
+
+        public override void PreInitialize()
+        {
+            Configuration.Modules.AbpWebCommon().SendAllExceptionsToClients = true;
         }
 
         public override void Initialize()

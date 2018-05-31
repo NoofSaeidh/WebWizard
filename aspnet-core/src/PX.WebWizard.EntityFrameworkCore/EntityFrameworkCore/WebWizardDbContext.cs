@@ -3,6 +3,7 @@ using Abp.Zero.EntityFrameworkCore;
 using PX.WebWizard.Authorization.Roles;
 using PX.WebWizard.Authorization.Users;
 using PX.WebWizard.MultiTenancy;
+using PX.WebWizard.LongRun;
 
 namespace PX.WebWizard.EntityFrameworkCore
 {
@@ -14,5 +15,7 @@ namespace PX.WebWizard.EntityFrameworkCore
             : base(options)
         {
         }
+
+        public DbSet<LongRunInfo> LongRunInfos { get; set; }
     }
 }

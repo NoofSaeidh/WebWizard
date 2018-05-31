@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.Internal;
 using Microsoft.EntityFrameworkCore.ValueGeneration;
 using PX.WebWizard.EntityFrameworkCore;
+using PX.WebWizard.LongRun;
 using System;
 
 namespace PX.WebWizard.Migrations
@@ -987,6 +988,32 @@ namespace PX.WebWizard.Migrations
                     b.HasIndex("TenantId", "NormalizedUserName");
 
                     b.ToTable("AbpUsers");
+                });
+
+            modelBuilder.Entity("PX.WebWizard.LongRun.LongRunInfo", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<bool>("Abortable");
+
+                    b.Property<string>("Args");
+
+                    b.Property<string>("Error");
+
+                    b.Property<string>("JobId");
+
+                    b.Property<int>("LongRunStatus");
+
+                    b.Property<string>("Message");
+
+                    b.Property<string>("Summary");
+
+                    b.Property<string>("Type");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("LongRunInfos");
                 });
 
             modelBuilder.Entity("PX.WebWizard.MultiTenancy.Tenant", b =>

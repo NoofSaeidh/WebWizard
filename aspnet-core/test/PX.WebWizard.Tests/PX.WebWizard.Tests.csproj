@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <VersionPrefix>1.0.0.0</VersionPrefix>
     <TargetFramework>netcoreapp2.0</TargetFramework>
@@ -10,9 +10,16 @@
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <LangVersion>7.1</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <LangVersion>7.1</LangVersion>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\PX.WebWizard.Application\PX.WebWizard.Application.csproj" />
     <ProjectReference Include="..\..\src\PX.WebWizard.EntityFrameworkCore\PX.WebWizard.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\PX.WebWizard.Tests.FakeAcExe\PX.WebWizard.Tests.FakeAcExe.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.0" />
@@ -24,6 +31,7 @@
     <PackageReference Include="Abp.TestBase" Version="3.6.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="2.0.3" />
     <PackageReference Include="Castle.Core" Version="4.2.1" />
+    <PackageReference Include="Moq" Version="4.8.1" />
   </ItemGroup>
   <ItemGroup>
     <None Update="appsettings.json">
