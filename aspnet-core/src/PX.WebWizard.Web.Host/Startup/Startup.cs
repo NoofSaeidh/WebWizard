@@ -28,19 +28,30 @@ using Abp.AspNetCore.SignalR.Hubs;
 
 namespace PX.WebWizard.Web.Host.Startup
 {
-    public class Startup
+    public class Startup : IStartup
     {
         private const string _defaultCorsPolicyName = "localhost";
 
         private readonly IConfigurationRoot _appConfiguration;
-
-        public Startup(IHostingEnvironment env)
+        private readonly IHostingEnvironment _environment;
+        private readonly ILoggerFactory _loggerFactory;
+        private readonly IConfiguration _configuration;
+        public Startup(IHostingEnvironment env, ILoggerFactory loggerFactory, IConfiguration configuration)
         {
             _appConfiguration = env.GetAppConfiguration();
+            _environment = env;
+            _loggerFactory = loggerFactory;
+            _configuration = configuration;
         }
 
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
+            // Acumatica settings
+            services.AddOptions()
+                .Configure<AcumaticaSettings>(_configuration.GetSection(
+                        AppConsts.AcumaticaSettingsConfigurationSection));
+
+
             // MVC
             services.AddMvc(
                 options => options.Filters.Add(new CorsAuthorizationFilterFactory(_defaultCorsPolicyName))
@@ -99,7 +110,7 @@ namespace PX.WebWizard.Web.Host.Startup
             );
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+        public void Configure(IApplicationBuilder app)
         {
             app.UseAbp(options => { options.UseAbpRequestLocalization = false; }); // Initializes ABP framework.
 

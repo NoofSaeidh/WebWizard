@@ -1,4 +1,4 @@
-﻿using PX.WebWizard.Configuration;
+﻿    using PX.WebWizard.Configuration;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
@@ -37,8 +37,14 @@ namespace PX.WebWizard.Acumatica.Wizard
             var tmp = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             //this to not to unzip on remote server (very slow)
             File.Copy(packagePath, tmp, false);
-            ZipFile.ExtractToDirectory(tmp, resultPath, overwrite);
-            File.Delete(tmp);
+            try
+            {
+                ZipFile.ExtractToDirectory(tmp, resultPath, overwrite);
+            }
+            finally
+            {
+                File.Delete(tmp);
+            }
         }
 
         public void FindAndUnpackInstallationPackage(string version, string resultFolderPath, bool overwrite = true)
@@ -52,7 +58,7 @@ namespace PX.WebWizard.Acumatica.Wizard
             {
                 foreach (var dir in Directory.EnumerateDirectories(packageLocation, version, SearchOption.AllDirectories))
                 {
-                    var file = Directory.EnumerateFiles(dir, Environment.InstallationPackageName, SearchOption.AllDirectories).SingleOrDefault();
+                    var file = Directory.EnumerateFiles(dir, Environment.InstallationPackageNamePattern, SearchOption.AllDirectories).SingleOrDefault();
                     if (file != null)
                     {
                         result = file;

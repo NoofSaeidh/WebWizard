@@ -29,22 +29,6 @@ namespace PX.WebWizard.Web.Host.Startup
         public override void Initialize()
         {
             IocManager.RegisterAssemblyByConvention(typeof(WebWizardWebHostModule).GetAssembly());
-
-            // todo: just a temp hack for DI
-            IocManager.Register<IOptionsSnapshot<AcumaticaSettings>, AcumaticaSettingsSnapshot>();
-        }
-
-        private class AcumaticaSettingsSnapshot : IOptionsSnapshot<AcumaticaSettings>
-        {
-            public AcumaticaSettings Value => new AcumaticaSettings
-            {
-                GlobalPath = "somewhere"
-            };
-
-            public AcumaticaSettings Get(string name)
-            {
-                throw new System.NotImplementedException();
-            }
         }
     }
 }

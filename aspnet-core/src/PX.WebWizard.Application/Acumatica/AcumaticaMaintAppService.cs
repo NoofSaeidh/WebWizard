@@ -1,11 +1,14 @@
 ﻿using Abp.Domain.Uow;
+using Microsoft.Extensions.Options;
 using PX.WebWizard.Acumatica.Dto;
 using PX.WebWizard.Acumatica.IisManagement;
 using PX.WebWizard.Acumatica.Wizard;
+using PX.WebWizard.Configuration;
 using PX.WebWizard.LongRun;
 using PX.WebWizard.LongRun.Dto;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,12 +20,16 @@ namespace PX.WebWizard.Acumatica
     {
         private readonly ILongRunBackgroundJobManager _backgroundJobManager;
         private readonly IAcIisService _acIisService;
+        private readonly AcumaticaSettings _acumaticaSettings;
+        private readonly IAcumaticaSettingsService _acumaticaSettingsService;
 
         public AcumaticaMaintAppService(ILongRunBackgroundJobManager backgroundJobManager,
-            IAcIisService acIisService)
+            IAcIisService acIisService, IAcumaticaSettingsService acumaticaSettingsService)
         {
             _backgroundJobManager = backgroundJobManager;
             _acIisService = acIisService;
+            _acumaticaSettingsService = acumaticaSettingsService;
+            _acumaticaSettings = _acumaticaSettingsService.Settings;
         }
 
         public Task<IEnumerable<Application>> GetApplications()
@@ -44,7 +51,7 @@ namespace PX.WebWizard.Acumatica
                 {
                     Version = installation.Version,
                     //todo: path
-                    ResultPath = installation.Name
+                    ResultPath = _acumaticaSettingsService.GetPathForInstallation(installation.Name)
                 });
 
             var result = ObjectMapper.Map<LongRunResultDto>(rawResult);
